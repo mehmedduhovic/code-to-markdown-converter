@@ -1,0 +1,140 @@
+<h4 class="wp-block-heading">How to create your own (simplistic) implementation of an observable?</h4>
+
+<p class="">Let us implement a simple implementation of an <a href="https://rxjs.dev/guide/observable">Observable</a> to help us understand the concept a bit more. This isn't a fully fledged Observable, but it is a good starting point.</p>
+
+<p class="">First let us implement the interfaces (because we are writing our implementations in TypeScript):</p>
+
+<pre class="EnlighterJSRAW" data-enlighter-language="typescript" data-enlighter-theme="monokai" data-enlighter-highlight="" data-enlighter-linenumbers="" data-enlighter-lineoffset="" data-enlighter-title="" data-enlighter-group="">interface Observer&lt;T> {
+  next: (value: T) => void;
+  error: (err: any) => void;
+  complete: () => void;
+}
+
+interface Subscription {
+  unsubscribe: () => void;
+}
+
+interface SafeObserver&lt;T> extends Observer&lt;T> {
+  isUnsubscribed: boolean;
+}</pre>
+
+<p class=""><code>Observer</code> is an object that receives notifications from the observable. Observer has three methods <code>next</code>, <code>error</code> and <code>complete</code>. In order to emit values from the observable, we would just need to call the <code>next</code> method, an close it up with <code>complete</code>. We would then provide the <code>Observer</code> object to the observable function.</p>
+
+<p class="">Next, let us implement the <code>Observable</code> class:</p>
+
+<pre class="EnlighterJSRAW" data-enlighter-language="typescript" data-enlighter-theme="monokai" data-enlighter-highlight="" data-enlighter-linenumbers="" data-enlighter-lineoffset="" data-enlighter-title="" data-enlighter-group="">class Observable&lt;T> {
+  private subscribeFunction: (observer: Observer&lt;T>) => void;
+
+  constructor(subscribeFunction: (observer: Observer&lt;T>) => void) {
+    this.subscribeFunction = subscribeFunction;
+  }
+
+  subscribe(observer: Observer&lt;T>): Subscription {
+    const safeObserver = this.createSafeObserver(observer);
+    this.subscribeFunction(safeObserver);
+
+    return {
+      unsubscribe: () => {
+        safeObserver.isUnsubscribed = true;
+      }
+    };
+  }
+
+  private createSafeObserver(observer: Observer&lt;T>): Observer&lt;T> {
+    const safeObserver = {
+      next: (value: T) => {
+        if (!safeObserver.isUnsubscribed &amp;&amp; observer.next) {
+          observer.next(value);
+        }
+      },
+      error: (err: any) => {
+        if (!safeObserver.isUnsubscribed &amp;&amp; observer.error) {
+          observer.error(err);
+        }
+        safeObserver.isUnsubscribed = true;
+      },
+      complete: () => {
+        if (!safeObserver.isUnsubscribed &amp;&amp; observer.complete) {
+          observer.complete();
+        }
+        safeObserver.isUnsubscribed = true;
+      },
+      isUnsubscribed: false
+    };
+
+    return safeObserver;
+  }
+}
+</pre>
+
+<p class="">And lastly let us end with the use case of the Observable:</p>
+
+<pre class="EnlighterJSRAW" data-enlighter-language="typescript" data-enlighter-theme="monokai" data-enlighter-highlight="" data-enlighter-linenumbers="" data-enlighter-lineoffset="" data-enlighter-title="" data-enlighter-group="">const myObservable = new Observable&lt;number>((observer) => {
+  let count = 0;
+  const intervalId = setInterval(() => {
+    observer.next(count++);
+
+    if (count > 5) {
+      observer.complete();
+      clearInterval(intervalId);
+    }
+  }, 1000);
+
+  return () => {
+    clearInterval(intervalId);
+  };
+});
+
+const myObserver: Observer&lt;number> = {
+  next: (value) => console.log('Value:', value),
+  error: (err) => console.error('Error:', err),
+  complete: () => console.log('Completed'),
+};
+
+const subscription = myObservable.subscribe(myObserver);
+
+setTimeout(() => {
+  subscription.unsubscribe();
+  console.log('Unsubscribed');
+}, 7000);
+</pre>
+
+<p class="">A great resource that helped me grasping the concepts of observables is <a href="https://www.youtube.com/watch?v=m40cF91F8_A&amp;ab_channel=AngularNYC">this one</a>.</p>
+
+<h4 class="wp-block-heading">What is the router outlet?</h4>
+
+<p class="">Router outlet is a directive which acts as a placeholder where the Angular Router should insert the component that matches the current route. It is one part of Angular's routing mechanism. The directive is placed inside the template of the component.</p>
+
+<pre class="EnlighterJSRAW" data-enlighter-language="html" data-enlighter-theme="monokai" data-enlighter-highlight="" data-enlighter-linenumbers="" data-enlighter-lineoffset="" data-enlighter-title="" data-enlighter-group="">&lt;!-- some HTML -->
+&lt;router-outlet>&lt;/router-outlet>
+&lt;!-- some HTML --></pre>
+
+<h4 class="wp-block-heading">How are routes configured?</h4>
+
+<p class="">Angular Routes are usually defined in a configuration object, typically inside a routing module. Each individual route matches an URL path to a component.</p>
+
+<pre class="EnlighterJSRAW" data-enlighter-language="typescript" data-enlighter-theme="monokai" data-enlighter-highlight="" data-enlighter-linenumbers="" data-enlighter-lineoffset="" data-enlighter-title="" data-enlighter-group="">// app-routing.module.ts
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { HomeComponent } from './home/home.component';
+import { AboutComponent } from './about/about.component';
+
+const routes: Routes = [
+  { path: 'home', component: HomeComponent },
+  { path: 'about', component: AboutComponent },
+  { path: '', redirectTo: '/home', pathMatch: 'full' },
+  { path: '**', component: PageNotFoundComponent }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule { }</pre>
+
+<p class="">In order to define routes in Angular, we need to import the <code>RouterModule</code> and provide them the list of routes. <code>RouterModule</code> is used to configure and manage navigation and routing, and additionally it provides services and directives for managing application states and views.</p>
+
+<h4 class="wp-block-heading">What is the forRoot(routes) doing?</h4>
+
+<p class=""><code>Router.forRoot(routes)</code> is part of route configuration. The method <code>forRoot</code> is used specifically to define top-level routes, if we wanted to define child routes in feature modules, we would use <code>RouterModule.forChild(routes)</code>.</p>
+

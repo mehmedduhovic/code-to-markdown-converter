@@ -1,0 +1,4 @@
+beautifulsoup4==4.12.3
+markdownify==0.12.1
+six==1.16.0
+soupsieve==2.5
