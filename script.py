@@ -15,10 +15,10 @@ def convert_to_markdown(input_html: str) -> str:
 def read_content_from_filename(input_filename: str) -> str:
     with open(input_filename, 'r', encoding='utf-8') as file:
         lines = file.readlines()
-
     filtered_lines = [line for line in lines if not line.strip().startswith('<!--')]
+    combined_stream = ''.join(filtered_lines)
 
-    return filtered_lines
+    return combined_stream
        
 def save_markdown(markdown_content: str, filename: str) -> None:
     with open(filename, 'w') as file:
